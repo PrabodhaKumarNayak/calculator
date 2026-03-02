@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room Code Chat</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#fff;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.box{
+  width:350px;
+  border:2px solid #22c55e;
+  padding:20px;
+  border-radius:10px;
+  text-align:center;
+}
+h2{color:#22c55e}
+input,button{
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
+  direction: ltr;
+  unicode-bidi: plaintext;
+  text-align: left;
+}
+#messageInput {
+  direction: ltr;
+  unicode-bidi: plaintext;
+  text-align: left;
+}
+input{border:1px solid #22c55e}
+button{
+  background:black;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+#chat{
+  display:none;
+  width:100%;
+  height:100vh;
+  flex-direction:column;
+}
+#messages{
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+}
+.msg{
+  background:#e5ffe5;
+  margin:5px 0;
+  padding:8px;
+  border-radius:8px;
+}
+.name{
+  font-weight:bold;
+  color:#22c55e;
+}
+#sendBox{
+  display:flex;
+  padding:10px;
+  border-top:2px solid #22c55e;
+}
+#sendBox input{flex:1}
+</style>
+</head>
+
+<body>
+
+<!-- HOME -->
+<div class="box" id="home">
+  <h2>Room Code Chat</h2>
+  <button onclick="createRoom()">Start New Room</button>
+  <input id="roomInput" placeholder="Enter room code">
+  <button onclick="joinRoom()">Join Room</button>
+</div>
+
+<!-- NAME -->
+<div class="box" id="nameBox" style="display:none;">
+  <h2>Your Name</h2>
+  <input id="username" placeholder="Enter your name">
+  <button onclick="enterChat()">Enter Chat</button>
+</div>
+
+<!-- CHAT -->
+<div id="chat">
+  <div id="messages"></div>
+  <div id="sendBox">
+    <input id="messageInput" placeholder="Type message">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+/* 🔥 PASTE YOUR FIREBASE CONFIG HERE */
+const firebaseConfig = {
+   apiKey: "AIzaSyAWTF48GwycWBl3jVafIOh4VDuJ0HDpR68",
+  authDomain: "greenchat-71b5b.firebaseapp.com",
+  projectId: "greenchat-71b5b",
+  storageBucket: "greenchat-71b5b.firebasestorage.app",
+  messagingSenderId: "469956390362",
+  appId: "1:469956390362:web:b225564b41e88f1be724e3"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let roomCode = "";
+let userName = "";
+
+function generateCode(){
+  return Math.random().toString(36).substring(2,8).toUpperCase();
+}
+
+function createRoom(){
+  roomCode = generateCode();
+  alert("Room Code: " + roomCode);
+  document.getElementById("home").style.display="none";
+  document.getElementById("nameBox").style.display="block";
+}
+
+function joinRoom(){
+  roomCode = document.getElementById("roomInput").value.trim();
+  if(!roomCode) return alert("Enter room code");
+  document.getElementById("home").style.display="none";
+  document.getElementById("nameBox").style.display="block";
+}
+
+function enterChat(){
+  userName = document.getElementById("username").value.trim();
+  if(!userName) return alert("Enter your name");
+  document.getElementById("nameBox").style.display="none";
+  document.getElementById("chat").style.display="flex";
+
+  db.collection("rooms")
+    .doc(roomCode)
+    .collection("messages")
+    .orderBy("time")
+    .onSnapshot(snapshot=>{
+      const messages=document.getElementById("messages");
+      messages.innerHTML="";
+      snapshot.forEach(doc=>{
+        const d=doc.data();
+        const div=document.createElement("div");
+        div.className="msg";
+        div.innerHTML=`<span class='name'>${d.name}:</span> ${d.text}`;
+        messages.appendChild(div);
+      });
+      messages.scrollTop=messages.scrollHeight;
+    });
+}
+
+function sendMessage(){
+  const text=document.getElementById("messageInput").value.trim();
+  if(!text) return;
+  db.collection("rooms")
+    .doc(roomCode)
+    .collection("messages")
+    .add({
+      name:userName,
+      text:text,
+      time:Date.now()
+    });
+  document.getElementById("messageInput").value="";
+}
+</script>
+
+</body>
+</html>
